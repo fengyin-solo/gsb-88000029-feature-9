@@ -1,18 +1,33 @@
 <script setup>
-import { riskMeta } from '../../utils/restorationFormatters'
+import { computed } from 'vue'
 
-defineProps({
+import { riskMeta } from '../../utils/restorationFormatters'
+import { normalizePageRange } from '../../utils/pageRange'
+
+const props = defineProps({
   items: {
     type: Array,
     required: true,
   },
 })
+
+// 已登记批次保持原样；仅当规范化结果与原始写法不同时追加展示。
+const decoratedItems = computed(() =>
+  props.items.map((item) => {
+    const normalized =
+      item.pagesNormalized ?? normalizePageRange(item.pages).normalized
+    return {
+      ...item,
+      normalizedPages: normalized && normalized !== item.pages ? normalized : '',
+    }
+  }),
+)
 </script>
 
 <template>
   <div class="batch-grid">
     <article
-      v-for="item in items"
+      v-for="item in decoratedItems"
       :key="item.code"
       class="batch-card"
     >
@@ -23,7 +38,11 @@ defineProps({
         </span>
       </div>
       <h4>{{ item.title }}</h4>
-      <p>页码：{{ item.pages }}</p>
+      <p>页码<template v-if="item.normalizedPages">（原始）</template>：{{ item.pages }}</p>
+      <p v-if="item.normalizedPages" class="normalized-pages">
+        规范化：{{ item.normalizedPages }}
+      </p>
+      <p v-if="item.totalPages">册页总数：{{ item.totalPages }} 页</p>
       <p>阶段：{{ item.status }}</p>
       <small>{{ item.note }}</small>
     </article>
@@ -65,6 +84,10 @@ h4 {
 p,
 small {
   color: #6a5439;
+}
+
+.normalized-pages {
+  color: #366338;
 }
 
 p + p,
